@@ -93,3 +93,4 @@ class _CanvasWidgetState extends ConsumerState<CanvasWidget> {
     ref.read(transformStateProvider.notifier).endTransform();
   }
 }
+

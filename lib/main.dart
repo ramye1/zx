@@ -1,4 +1,3 @@
-dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:masra_al_dokhail/presentation/pages/canvas_page.dart';
@@ -25,3 +24,4 @@ class MasraAlDokhailApp extends StatelessWidget {
     );
   }
 }
+

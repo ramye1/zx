@@ -1,4 +1,6 @@
 dart
+import 'package:flutter/material.dart';
+
 class AppConstants {
   // Canvas
   static const double defaultCanvasWidth = 1200.0;
@@ -36,4 +38,14 @@ class AppConstants {
   // Grid
   static const double gridSize = 20.0;
   static const Color gridColor = Color(0xFFEEEEEE);
+
+  // Animation
+  static const Duration shortAnimationDuration = Duration(milliseconds: 200);
+  static const Duration mediumAnimationDuration = Duration(milliseconds: 300);
+  static const Duration longAnimationDuration = Duration(milliseconds: 500);
+
+  // Spacing
+  static const double paddingSmall = 8.0;
+  static const double paddingMedium = 16.0;
+  static const double paddingLarge = 24.0;
 }

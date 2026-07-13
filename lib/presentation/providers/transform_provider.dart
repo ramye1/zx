@@ -1,4 +1,3 @@
-dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:masra_al_dokhail/domain/entities/transform_state.dart';
@@ -50,3 +49,4 @@ class TransformStateNotifier extends StateNotifier<TransformState> {
     state = const TransformState();
   }
 }
+

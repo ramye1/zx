@@ -1,4 +1,3 @@
-dart
 import 'package:flutter/material.dart';
 import 'package:masra_al_dokhail/domain/entities/tree_element.dart';
 import 'package:masra_al_dokhail/domain/entities/trunk.dart';
@@ -164,3 +163,4 @@ class CanvasPainter extends CustomPainter {
         oldDelegate.zoom != zoom;
   }
 }
+

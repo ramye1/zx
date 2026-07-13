@@ -1,92 +1,95 @@
 dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:masra_al_dokhail/domain/entities/canvas_state.dart';
 import 'package:masra_al_dokhail/presentation/providers/canvas_provider.dart';
 import 'package:masra_al_dokhail/presentation/providers/selection_provider.dart';
 import 'package:masra_al_dokhail/presentation/providers/transform_provider.dart';
 import 'canvas_painter.dart';
 
-class CanvasWidget extends ConsumerWidget {
+class CanvasWidget extends ConsumerStatefulWidget {
   const CanvasWidget({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final canvasState = ref.watch(canvasStateProvider);
-    final transformState = ref.watch(transformStateProvider);
+  ConsumerState<CanvasWidget> createState() => _CanvasWidgetState();
+}
 
-    return GestureDetector(
-      onTapDown: (details) {
-        _handleTapDown(details, context, ref, canvasState);
-      },
-      onPanStart: (details) {
-        _handlePanStart(details, ref);
-      },
-      onPanUpdate: (details) {
-        _handlePanUpdate(details, ref, canvasState);
-      },
-      onPanEnd: (details) {
-        _handlePanEnd(ref);
-      },
-      child: CustomPaint(
-        painter: CanvasPainter(
-          elements: canvasState.elements,
-          showGrid: canvasState.showGrid,
-          panOffset: canvasState.panOffset,
-          zoom: canvasState.zoom,
-        ),
-        child: Container(
-          color: Colors.transparent,
+class _CanvasWidgetState extends ConsumerState<CanvasWidget> {
+  late Offset _lastPanPosition;
+
+  @override
+  Widget build(BuildContext context) {
+    final canvasState = ref.watch(canvasStateProvider);
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.basic,
+      child: GestureDetector(
+        onTapDown: (details) => _handleTapDown(details, canvasState),
+        onPanStart: (details) => _handlePanStart(details),
+        onPanUpdate: (details) => _handlePanUpdate(details, canvasState),
+        onPanEnd: (details) => _handlePanEnd(),
+        child: CustomPaint(
+          painter: CanvasPainter(
+            elements: canvasState.elements,
+            showGrid: canvasState.showGrid,
+            panOffset: canvasState.panOffset,
+            zoom: canvasState.zoom,
+          ),
+          isComplex: true,
+          willChange: true,
+          child: Container(color: Colors.transparent),
         ),
       ),
     );
   }
 
-  void _handleTapDown(
-    TapDownDetails details,
-    BuildContext context,
-    WidgetRef ref,
-    CanvasState canvasState,
-  ) {
+  void _handleTapDown(TapDownDetails details, CanvasState canvasState) {
     final tapPosition = details.localPosition;
-
-    // Check if an element was tapped
     final tappedElement = canvasState.getElementAt(tapPosition);
 
     if (tappedElement != null) {
-      final multiSelect = details.kind == PointerDeviceKind.mouse &&
-          HardwareKeyboard.instance.isShiftPressed;
       ref
           .read(selectionStateProvider.notifier)
-          .selectElement(tappedElement, multiSelect: multiSelect);
+          .selectElement(tappedElement, multiSelect: false);
+      _startMoveTransform(tapPosition);
     } else {
       ref.read(selectionStateProvider.notifier).clearSelection();
     }
   }
 
-  void _handlePanStart(PointerDownEvent details, WidgetRef ref) {
+  void _startMoveTransform(Offset position) {
+    ref.read(transformStateProvider.notifier).startMove(position);
+  }
+
+  void _handlePanStart(DragStartDetails details) {
+    _lastPanPosition = details.localPosition;
+  }
+
+  void _handlePanUpdate(DragUpdateDetails details, CanvasState canvasState) {
+    final transformState = ref.read(transformStateProvider);
     final selectionState = ref.read(selectionStateProvider);
 
-    if (selectionState.hasSelection) {
-      ref.read(transformStateProvider.notifier).startMove(details.position);
+    if (transformState.isTransforming && selectionState.hasSelection) {
+      final delta = details.localPosition - _lastPanPosition;
+      _applyTransform(delta, canvasState, selectionState);
+      _lastPanPosition = details.localPosition;
     }
   }
 
-  void _handlePanUpdate(
-    PointerMoveEvent details,
-    WidgetRef ref,
+  void _applyTransform(
+    Offset delta,
     CanvasState canvasState,
+    SelectionState selectionState,
   ) {
-    final transformState = ref.read(transformStateProvider);
-
-    if (transformState.isTransforming) {
-      ref.read(transformStateProvider.notifier).updateTransform(details.position);
+    for (final element in selectionState.selectedElements) {
+      final updatedElement = element.copyWith(
+        position: element.position + delta,
+      );
+      ref.read(canvasStateProvider.notifier).updateElement(updatedElement);
     }
   }
 
-  void _handlePanEnd(WidgetRef ref) {
+  void _handlePanEnd() {
     ref.read(transformStateProvider.notifier).endTransform();
   }
 }
-
-// Placeholder for CanvasState import
-import 'package:masra_al_dokhail/domain/entities/canvas_state.dart';

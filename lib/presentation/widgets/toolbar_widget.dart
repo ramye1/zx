@@ -13,6 +13,9 @@ class ToolbarWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final selectionState = ref.watch(selectionStateProvider);
+    final canvasState = ref.watch(canvasStateProvider);
+
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -27,11 +30,9 @@ class ToolbarWidget extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            _buildElementButton(
-              context,
-              ref,
-              'إضافة جذع',
-              () {
+            _ElementButton(
+              label: 'إضافة جذع',
+              onPressed: () {
                 final trunk = Trunk(
                   id: IdGenerator.generateWithPrefix('trunk'),
                   position: const Offset(300, 300),
@@ -40,11 +41,9 @@ class ToolbarWidget extends ConsumerWidget {
               },
             ),
             const SizedBox(height: 8),
-            _buildElementButton(
-              context,
-              ref,
-              'إضافة غصن',
-              () {
+            _ElementButton(
+              label: 'إضافة غصن',
+              onPressed: () {
                 final branch = Branch(
                   id: IdGenerator.generateWithPrefix('branch'),
                   position: const Offset(400, 400),
@@ -53,11 +52,9 @@ class ToolbarWidget extends ConsumerWidget {
               },
             ),
             const SizedBox(height: 8),
-            _buildElementButton(
-              context,
-              ref,
-              'إضافة ورقة',
-              () {
+            _ElementButton(
+              label: 'إضافة ورقة',
+              onPressed: () {
                 final leaf = Leaf(
                   id: IdGenerator.generateWithPrefix('leaf'),
                   position: const Offset(500, 500),
@@ -66,48 +63,39 @@ class ToolbarWidget extends ConsumerWidget {
               },
             ),
             const SizedBox(height: 16),
-            _buildActionButton(
-              context,
-              ref,
-              'حذف',
-              () {
-                final selectionState = ref.read(selectionStateProvider);
-                for (final element in selectionState.selectedElements) {
-                  ref.read(canvasStateProvider.notifier).removeElement(element.id);
-                }
-                ref.read(selectionStateProvider.notifier).clearSelection();
-              },
-              enabled: ref.watch(selectionStateProvider).hasSelection,
+            const Divider(),
+            const SizedBox(height: 16),
+            _ActionButton(
+              label: 'حذف',
+              onPressed: selectionState.hasSelection
+                  ? () {
+                      for (final element in selectionState.selectedElements) {
+                        ref
+                            .read(canvasStateProvider.notifier)
+                            .removeElement(element.id);
+                      }
+                      ref.read(selectionStateProvider.notifier).clearSelection();
+                    }
+                  : null,
             ),
             const SizedBox(height: 8),
-            _buildActionButton(
-              context,
-              ref,
-              'مسح الرسم',
-              () {
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('تأكيد'),
-                    content: const Text('هل تريد حذف جميع العناصر؟'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('إلغاء'),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          ref
-                              .read(canvasStateProvider.notifier)
-                              .clearCanvas();
-                          Navigator.pop(context);
-                        },
-                        child: const Text('تأكيد'),
-                      ),
-                    ],
-                  ),
-                );
-              },
+            _ActionButton(
+              label: 'مسح الرسم',
+              onPressed: canvasState.elements.isNotEmpty
+                  ? () => _showClearConfirmation(context, ref)
+                  : null,
+            ),
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
+            Text(
+              'العناصر المختارة: ${selectionState.selectedElements.length}',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'إجمالي العناصر: ${canvasState.elements.length}',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],
         ),
@@ -115,28 +103,74 @@ class ToolbarWidget extends ConsumerWidget {
     );
   }
 
-  Widget _buildElementButton(
-    BuildContext context,
-    WidgetRef ref,
-    String label,
-    VoidCallback onPressed,
-  ) {
+  void _showClearConfirmation(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('تأكيد الحذف'),
+        content: const Text('هل تريد حذف جميع العناصر من الرسم؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إلغاء'),
+          ),
+          TextButton(
+            onPressed: () {
+              ref.read(canvasStateProvider.notifier).clearCanvas();
+              ref.read(selectionStateProvider.notifier).clearSelection();
+              Navigator.pop(context);
+            },
+            child: const Text('تأكيد', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ElementButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onPressed;
+
+  const _ElementButton({
+    required this.label,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return ElevatedButton(
       onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+      ),
       child: Text(label),
     );
   }
+}
 
-  Widget _buildActionButton(
-    BuildContext context,
-    WidgetRef ref,
-    String label,
-    VoidCallback onPressed, {
-    bool enabled = true,
-  }) {
+class _ActionButton extends StatelessWidget {
+  final String label;
+  final VoidCallback? onPressed;
+
+  const _ActionButton({
+    required this.label,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return ElevatedButton(
-      onPressed: enabled ? onPressed : null,
-      child: Text(label),
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        backgroundColor: Colors.red[400],
+        disabledBackgroundColor: Colors.grey[300],
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(color: Colors.white),
+      ),
     );
   }
 }

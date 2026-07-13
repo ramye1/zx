@@ -1,4 +1,3 @@
-dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
 import 'package:masra_al_dokhail/data/datasources/canvas_local_datasource.dart';
